@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- Opens the real popup with a fake chrome.* API and sample data.
+     Serve the repo root and open /tests/popup-harness.html -->
+<html><head><meta charset="utf-8"><title>Marketplace Lens popup harness</title>
+<style>html,body{margin:0;background:#888}iframe{border:0;background:#fff;margin:16px;box-shadow:0 2px 12px #0004}</style></head>
+<body>
+<iframe id="f" width="380" height="600"></iframe>
+<script>
+const now = Date.now(), H = 36e5;
+const rec = (t, prices, changedHoursAgo) => ({ f: now - 72 * H, s: now - H, t, i: null, price: prices.at(-1), value: parseFloat(prices.at(-1).replace(/[^\d.]/g, "")),
+  h: prices.map((p, i) => ({ t: now - (prices.length - i) * 24 * H, p, v: parseFloat(p.replace(/[^\d.]/g, "")) })), ...(changedHoursAgo != null ? { c: now - changedHoursAgo * H } : {}) });
+const store = {
+  "l:101": rec("Road bike, 56cm aluminium frame", ["CA$400", "CA$320"], 2),
+  "l:102": rec("Desk lamp", ["CA$25", "CA$35"], 30),
+  "l:103": rec("Couch", ["FREE"]),
+  "l:104": rec("Yamaha MODX6+ 61 key", ["CA$2,200", "CA$2,000"], 0.2),
+  settings: { enabled: true, peek: false, seenMs: 1000 },
+  errors: [{ code: "ML-301", details: "Example error for the harness", t: now }],
+};
+const session = { "count:1": 37 };
+const area = (o) => ({
+  get: async (k) => k == null ? { ...o } : Object.fromEntries((Array.isArray(k) ? k : [k]).filter((x) => x in o).map((x) => [x, o[x]])),
+  set: async (v) => Object.assign(o, v), remove: async (k) => [].concat(k).forEach((x) => delete o[x]),
+});
+const chromeMock = {
+  runtime: { getManifest: () => ({ version: "1.0.0" }), sendMessage: async () => ({ checkedAt: now, current: "1.0.0", latest: "1.0.0", available: false }) },
+  storage: { local: area(store), session: area(session) },
+  tabs: { query: async () => [{ id: 1 }] },
+};
+const f = document.getElementById("f");
+setTimeout(async () => {
+  const html = await (await fetch("/app/popup.html")).text();
+  const doc = f.contentDocument;
+  f.contentWindow.chrome = chromeMock;
+  doc.open();
+  doc.write(html.replace("<head>", '<head><base href="/app/">'));
+  doc.close();
+}, 0);
+</script></body></html>
