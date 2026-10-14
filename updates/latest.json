@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "url": "MarketplaceLens.zip",
-  "notes": "First release: hides Facebook Marketplace listings you've already seen, unless the price has changed."
+  "notes": "Hidden listings now keep their spot in the grid, blurred, with \"Seen \u00b7 Click to show\" on top. Click one to reveal it for the rest of the visit. Settings > Hidden listings also offers a solid cover, or removing them from the grid as before."
 }
