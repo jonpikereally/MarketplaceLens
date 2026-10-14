@@ -44,6 +44,8 @@ main { padding: 10px 12px 14px; }
 .big span:first-child { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; margin: 6px 0; }
 .check input { margin-top: 2px; accent-color: var(--accent); }
+fieldset.choice { border: 0; padding: 0; margin: 10px 0; }
+fieldset.choice legend { padding: 0; margin-bottom: 2px; }
 .field { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
 .field select, .field input { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; }
 

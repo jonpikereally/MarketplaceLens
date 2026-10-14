@@ -1,7 +1,7 @@
 import { describe, detailsText, logError, ERROR_HOVER, ERROR_LIST_URL, REPO } from "../src/shared/errors.js";
 
 const VERSION = chrome.runtime.getManifest().version;
-const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, updateSource: "" };
+const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, hideStyle: "blur", updateSource: "" };
 const KEY = "l:";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -96,6 +96,8 @@ async function render() {
   $("#offNote").hidden = settings.enabled;
   $("#seenMs").value = String(settings.seenMs);
   $("#hideRightAway").checked = settings.hideRightAway;
+  for (const r of document.querySelectorAll('input[name="hideStyle"]')) r.checked = r.value === settings.hideStyle;
+  $("#peek").parentElement.lastChild.textContent = { collapse: " Peek at hidden listings (shown faded)", blur: " Peek at hidden listings (less blur)", cover: " Peek at hidden listings (see through the covers)" }[settings.hideStyle] || " Peek at hidden listings";
   $("#forgetDays").value = String(settings.forgetDays);
   $("#updateSource").value = settings.updateSource || "";
   $("#total").textContent = listings.length.toLocaleString();
@@ -154,6 +156,7 @@ const doForget = guard("ML-301", async () => {
 $("#enabled").onchange = (e) => { save({ enabled: e.target.checked }); $("#offNote").hidden = e.target.checked; };
 $("#peek").onchange = (e) => save({ peek: e.target.checked });
 $("#seenMs").onchange = (e) => save({ seenMs: Number(e.target.value) });
+for (const r of document.querySelectorAll('input[name="hideStyle"]')) r.onchange = async (e) => { await save({ hideStyle: e.target.value }); render(); };
 $("#hideRightAway").onchange = (e) => save({ hideRightAway: e.target.checked });
 $("#forgetDays").onchange = (e) => save({ forgetDays: Number(e.target.value) });
 $("#updateSource").onchange = (e) => save({ updateSource: e.target.value.trim() });

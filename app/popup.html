@@ -19,7 +19,7 @@
   <main>
     <section class="card" id="tabCard">
       <div class="big"><span id="hiddenCount">0</span> <span id="hiddenLabel">hidden on this page</span></div>
-      <label class="check"><input id="peek" type="checkbox"> Peek at hidden listings (shown faded)</label>
+      <label class="check"><input id="peek" type="checkbox"> Peek at hidden listings</label>
       <p class="muted" id="offNote" hidden>Hiding is off. Listings are still being remembered.</p>
     </section>
 
@@ -37,6 +37,15 @@
           <option value="3000">3 seconds</option>
         </select>
       </label>
+      <fieldset class="choice">
+        <legend>Hidden listings</legend>
+        <label class="check"><input type="radio" name="hideStyle" value="blur">
+          <span>Blur them<br><span class="muted">They keep their spot in the grid, blurred, with "Seen · Click to show" on top.</span></span></label>
+        <label class="check"><input type="radio" name="hideStyle" value="cover">
+          <span>Cover them<br><span class="muted">Like blur, but with a solid panel instead.</span></span></label>
+        <label class="check"><input type="radio" name="hideStyle" value="collapse">
+          <span>Remove them<br><span class="muted">They disappear from the grid, so new listings move up.</span></span></label>
+      </fieldset>
       <label class="check"><input id="hideRightAway" type="checkbox">
         <span>Hide listings as soon as I scroll past them<br><span class="muted">Off: they're hidden from your next visit or reload, so the page doesn't jump while you browse.</span></span></label>
       <label class="field">Show seen listings again after
