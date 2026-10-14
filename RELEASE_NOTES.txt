@@ -1,0 +1,1 @@
+First release: hides Facebook Marketplace listings you've already seen, unless the price has changed.

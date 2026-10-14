@@ -1,0 +1,67 @@
+<!doctype html>
+<!-- A stand-in for a Facebook Marketplace feed, built like the real one (cards
+     are links whose aria-label reads "Title, Price, Place, listing <id>"), that
+     runs the real src/content.js with a fake chrome.* whose storage survives
+     reloads (localStorage). Serve the repo root and open /tests/fake-marketplace.html -->
+<html lang="en"><head><meta charset="utf-8"><title>Fake Marketplace</title>
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 0; background: #f0f2f5; }
+  .bar { position: sticky; top: 0; background: #fff; padding: 8px 12px; display: flex; gap: 8px; flex-wrap: wrap; box-shadow: 0 1px 2px #0002; z-index: 5; }
+  .grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
+  .grid > div { width: 180px; }
+  a { display: block; color: inherit; text-decoration: none; background: #fff; border-radius: 8px; overflow: hidden; }
+  .img { height: 140px; background: linear-gradient(135deg, #9ab, #cde); }
+  .t { padding: 6px 8px; }
+  .p { font-weight: 700; }
+</style></head>
+<body>
+<div class="bar">
+  <button id="reload">Reload (next visit)</button>
+  <button id="drop">Seller drops price of "Road bike"</button>
+  <button id="raise">Seller raises price of "Desk lamp"</button>
+  <button id="peek">Toggle peek</button>
+  <button id="reset">Reset test</button>
+  <span id="status"></span>
+</div>
+<div class="grid" id="grid"></div>
+<script>
+  history.replaceState(null, "", "/marketplace/toronto/?fake=1");
+  const listings = [
+    ["101", "Road bike", 400], ["102", "Desk lamp", 25], ["103", "Couch", 0], ["104", "Guitar amp", 180],
+    ["105", "Snow tires", 300], ["106", "Bookshelf", 60], ["107", "Monitor 27in", 150], ["108", "Kayak", 650],
+  ];
+  const prices = JSON.parse(localStorage.fakePrices || "{}");
+  const fmt = (n) => (n === 0 ? "FREE" : "CA$" + n.toLocaleString());
+  document.getElementById("grid").innerHTML = listings.map(([id, title, p]) => {
+    const price = prices[id] ?? p;
+    return `<div><a href="/marketplace/item/${id}/?ref=browse" aria-label="${title}, ${fmt(price)}, Toronto, ON, listing ${id}">
+      <div class="img"></div><div class="t"><div class="p">${fmt(price)}</div><div>${title}</div><div>Toronto, ON</div></div></a></div>`;
+  }).join("");
+
+  const store = JSON.parse(localStorage.fakeStore || "{}");
+  const persist = () => { localStorage.fakeStore = JSON.stringify(store); };
+  const listeners = [];
+  window.msgs = [];
+  window.chrome = {
+    runtime: { id: "test", sendMessage: async (m) => { window.msgs.push(m); if (m.type === "count") { const st = document.getElementById("status"); if (st.textContent !== `badge: ${m.n} hidden`) st.textContent = `badge: ${m.n} hidden`; } } },
+    storage: {
+      local: {
+        get: async (k) => (k == null ? { ...store } : Object.fromEntries([].concat(k).filter((x) => x in store).map((x) => [x, store[x]]))),
+        set: async (o) => {
+          const changes = Object.fromEntries(Object.entries(o).map(([k, v]) => [k, { oldValue: store[k], newValue: v }]));
+          Object.assign(store, o); persist(); listeners.forEach((f) => f(changes, "local"));
+        },
+        remove: async (k) => { const changes = {}; [].concat(k).forEach((x) => { changes[x] = { oldValue: store[x] }; delete store[x]; }); persist(); listeners.forEach((f) => f(changes, "local")); },
+      },
+      onChanged: { addListener: (f) => listeners.push(f) },
+    },
+  };
+  const bump = (id, n) => { prices[id] = n; localStorage.fakePrices = JSON.stringify(prices); };
+  document.getElementById("reload").onclick = () => location.href = "/tests/fake-marketplace.html";
+  document.getElementById("drop").onclick = () => { bump("101", 320); location.href = "/tests/fake-marketplace.html"; };
+  document.getElementById("raise").onclick = () => { bump("102", 35); location.href = "/tests/fake-marketplace.html"; };
+  document.getElementById("peek").onclick = () => chrome.storage.local.set({ settings: { ...(store.settings || {}), peek: !(store.settings || {}).peek } });
+  document.getElementById("reset").onclick = () => { delete localStorage.fakeStore; delete localStorage.fakePrices; location.href = "/tests/fake-marketplace.html"; };
+</script>
+<script src="/src/content.js"></script>
+</body></html>
