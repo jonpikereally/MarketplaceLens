@@ -46,6 +46,18 @@
         <label class="check"><input type="radio" name="hideStyle" value="collapse">
           <span>Remove them<br><span class="muted">They disappear from the grid, so new listings move up.</span></span></label>
       </fieldset>
+      <div class="field" id="blurField">
+        <label for="blurPx">Blur strength <span class="muted" id="blurLabel"></span></label>
+        <div class="slider-row">
+          <span class="muted">Light</span>
+          <input id="blurPx" type="range" min="2" max="30" step="1">
+          <span class="muted">Unreadable</span>
+        </div>
+        <div class="blur-preview" aria-hidden="true">
+          <div class="blur-sample"><span class="ph"></span><b>CA$450</b><span>Road bike, 56cm</span><span class="muted">Toronto, ON</span></div>
+          <div class="blur-veil"><b>Seen 3 days ago</b></div>
+        </div>
+      </div>
       <label class="check"><input id="hideRightAway" type="checkbox">
         <span>Hide listings as soon as I scroll past them<br><span class="muted">Off: they're hidden from your next visit or reload, so the page doesn't jump while you browse.</span></span></label>
       <label class="field">Show seen listings again after

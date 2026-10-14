@@ -44,6 +44,14 @@ main { padding: 10px 12px 14px; }
 .big span:first-child { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; margin: 6px 0; }
 .check input { margin-top: 2px; accent-color: var(--accent); }
+.slider-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.slider-row input { flex: 1; accent-color: var(--accent); }
+.blur-preview { position: relative; height: 92px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); margin-top: 4px; }
+.blur-sample { display: grid; grid-template-columns: 64px 1fr; grid-template-rows: repeat(3, auto); column-gap: 10px; align-content: center; height: 100%; padding: 0 10px; }
+.blur-sample .ph { grid-row: 1 / 4; height: 64px; border-radius: 6px; background: linear-gradient(135deg, #e07a5f, #3d405b 50%, #81b29a); }
+.blur-veil { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.18);
+  backdrop-filter: blur(var(--preview-blur, 14px)) saturate(.7); -webkit-backdrop-filter: blur(var(--preview-blur, 14px)) saturate(.7); }
+.blur-veil b { background: var(--bg); padding: 3px 10px; border-radius: 999px; font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
 fieldset.choice { border: 0; padding: 0; margin: 10px 0; }
 fieldset.choice legend { padding: 0; margin-bottom: 2px; }
 .field { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }

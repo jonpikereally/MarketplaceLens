@@ -9,7 +9,7 @@ Marketplace keeps showing the same listings. Marketplace Lens remembers every li
 - **Remembers what you've seen.** A listing counts as seen once the *whole* card (photo, price and title) has been on screen for about a second. Cards cut off at the edge of the window don't count. Opening a listing counts too.
 - **Hides seen listings on your next visit**, or after a reload. It doesn't hide while you're scrolling, so the page never jumps under you. (Settings has an option to hide them as soon as you scroll past.)
 - **You choose how they're hidden** (Settings → Hidden listings):
-  - **Blur them** (default): the listing keeps its spot in the grid, blurred, with "Seen 3 days ago · Click to show" on top.
+  - **Blur them** (default): the listing keeps its spot in the grid, blurred, with "Seen 3 days ago · Click to show" on top. A **Blur strength** slider sets how blurred, from light to unreadable.
   - **Cover them**: the same, with a solid panel instead of a blur.
   - **Remove them**: they disappear from the grid, so new listings move up.
 

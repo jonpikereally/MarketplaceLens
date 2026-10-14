@@ -9,7 +9,7 @@
   const KEY = "l:"; // storage key prefix: "l:<listing id>"
   // hideStyle: "blur" keeps the card's space and blurs it under a click-to-show label;
   // "cover" uses a solid panel instead; "collapse" removes the card from the grid.
-  const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, hideStyle: "blur" };
+  const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, hideStyle: "blur", blurPx: 14 };
 
   // ---------- reading a card ----------
 
@@ -104,8 +104,9 @@
       /* "blur": same panel, but see-through and blurred; labels sit on small pills */
       html.mlens-blur [data-mlens="hide"] > .mlens-cover {
         background: rgba(255, 255, 255, .18);
-        backdrop-filter: blur(14px) saturate(.7); -webkit-backdrop-filter: blur(14px) saturate(.7); }
-      html.mlens-blur.mlens-peek [data-mlens="hide"] > .mlens-cover { opacity: 1; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+        backdrop-filter: blur(var(--mlens-blur, 14px)) saturate(.7); -webkit-backdrop-filter: blur(var(--mlens-blur, 14px)) saturate(.7); }
+      html.mlens-blur.mlens-peek [data-mlens="hide"] > .mlens-cover { opacity: 1;
+        backdrop-filter: blur(calc(var(--mlens-blur, 14px) / 4)); -webkit-backdrop-filter: blur(calc(var(--mlens-blur, 14px) / 4)); }
       html.mlens-blur [data-mlens="hide"] > .mlens-cover b,
       html.mlens-blur [data-mlens="hide"] > .mlens-cover .mlens-show {
         background: var(--card-background, #fff); padding: 3px 10px; border-radius: 999px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
@@ -124,6 +125,8 @@
     document.documentElement.classList.toggle("mlens-peek", !!settings.peek);
     document.documentElement.classList.toggle("mlens-collapse", settings.hideStyle === "collapse");
     document.documentElement.classList.toggle("mlens-blur", settings.hideStyle === "blur");
+    const px = `${Math.min(40, Math.max(1, Number(settings.blurPx) || 14))}px`;
+    if (document.documentElement.style.getPropertyValue("--mlens-blur") !== px) document.documentElement.style.setProperty("--mlens-blur", px);
   }
 
   const ago = (t) => {

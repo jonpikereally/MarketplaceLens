@@ -1,7 +1,7 @@
 import { describe, detailsText, logError, ERROR_HOVER, ERROR_LIST_URL, REPO } from "../src/shared/errors.js";
 
 const VERSION = chrome.runtime.getManifest().version;
-const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, hideStyle: "blur", updateSource: "" };
+const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, hideStyle: "blur", blurPx: 14, updateSource: "" };
 const KEY = "l:";
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -97,6 +97,9 @@ async function render() {
   $("#seenMs").value = String(settings.seenMs);
   $("#hideRightAway").checked = settings.hideRightAway;
   for (const r of document.querySelectorAll('input[name="hideStyle"]')) r.checked = r.value === settings.hideStyle;
+  $("#blurField").hidden = settings.hideStyle !== "blur";
+  $("#blurPx").value = String(settings.blurPx);
+  showBlur(settings.blurPx);
   $("#peek").parentElement.lastChild.textContent = { collapse: " Peek at hidden listings (shown faded)", blur: " Peek at hidden listings (less blur)", cover: " Peek at hidden listings (see through the covers)" }[settings.hideStyle] || " Peek at hidden listings";
   $("#forgetDays").value = String(settings.forgetDays);
   $("#updateSource").value = settings.updateSource || "";
@@ -157,6 +160,18 @@ $("#enabled").onchange = (e) => { save({ enabled: e.target.checked }); $("#offNo
 $("#peek").onchange = (e) => save({ peek: e.target.checked });
 $("#seenMs").onchange = (e) => save({ seenMs: Number(e.target.value) });
 for (const r of document.querySelectorAll('input[name="hideStyle"]')) r.onchange = async (e) => { await save({ hideStyle: e.target.value }); render(); };
+// Blur strength: preview and the open Marketplace tab update while dragging.
+function showBlur(px) {
+  $("#blurLabel").textContent = `(${px}px)`;
+  document.documentElement.style.setProperty("--preview-blur", `${px}px`);
+}
+let blurTimer = null;
+$("#blurPx").oninput = (e) => {
+  const px = Number(e.target.value);
+  showBlur(px);
+  clearTimeout(blurTimer);
+  blurTimer = setTimeout(() => save({ blurPx: px }), 80);
+};
 $("#hideRightAway").onchange = (e) => save({ hideRightAway: e.target.checked });
 $("#forgetDays").onchange = (e) => save({ forgetDays: Number(e.target.value) });
 $("#updateSource").onchange = (e) => save({ updateSource: e.target.value.trim() });

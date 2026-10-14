@@ -1,1 +1,1 @@
-Hidden listings now keep their spot in the grid, blurred, with "Seen · Click to show" on top. Click one to reveal it for the rest of the visit. Settings > Hidden listings also offers a solid cover, or removing them from the grid as before.
+New: a Blur strength slider in Settings (shown when Hidden listings is set to Blur), from a light blur to unreadable, with a live preview. Open Marketplace tabs update as you drag.
