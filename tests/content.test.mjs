@@ -26,3 +26,12 @@ c = readCard(fakeLink("Free Hot tub, FREE, Guelph, ON, listing 8", "FREE\nFree H
 assert.deepEqual([c.price, c.value, c.title], ["FREE", 0, "Free Hot tub"]);
 assert.equal(readCard(fakeLink("x", "", "/marketplace/category/vehicles/")), null);
 console.log("All content tests passed.");
+
+// "Seen … ago" wording.
+const { ago } = new Function(pick(/  const unit = .*\n/) + pick(/  function ago\(t\)[\s\S]*?\n  }\n/) + "return { ago };")();
+const now = Date.now(), S = 1000, M = 60 * S, H = 60 * M, D = 24 * H;
+for (const [dt, want] of [[0, "0 seconds ago"], [1 * S, "1 second ago"], [45 * S, "45 seconds ago"], [1 * M, "1 minute ago"], [12 * M + 30 * S, "12 minutes ago"],
+  [1 * H, "1 hour ago"], [3 * H + 20 * M, "3 hours 20 minutes ago"], [1 * D, "1 day ago"], [2 * D + 4 * H + 5 * M, "2 days 4 hours ago"], [40 * D, "40 days ago"]]) {
+  assert.equal(ago(now - dt), want, want);
+}
+console.log("All 'seen ago' tests passed.");

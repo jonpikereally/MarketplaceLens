@@ -1,1 +1,1 @@
-New: a Blur strength slider in Settings (shown when Hidden listings is set to Blur), from a light blur to unreadable, with a live preview. Open Marketplace tabs update as you drag.
+Hidden listings now say exactly how long ago you saw them ("Seen 3 hours 20 minutes ago"), counting up live; hover for the exact date and time.
