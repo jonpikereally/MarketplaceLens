@@ -109,7 +109,7 @@
         backdrop-filter: blur(calc(var(--mlens-blur, 14px) / 4)); -webkit-backdrop-filter: blur(calc(var(--mlens-blur, 14px) / 4)); }
       html.mlens-blur [data-mlens="hide"] > .mlens-cover b,
       html.mlens-blur [data-mlens="hide"] > .mlens-cover .mlens-show {
-        background: var(--card-background, #fff); padding: 3px 10px; border-radius: 999px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+        background: var(--card-background, #fff); padding: 3px 10px; border-radius: 12px; max-width: 92%; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
       html.mlens-blur [data-mlens="hide"] > .mlens-cover svg { color: #fff; opacity: .95; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
       [data-mlens-tagged] { position: relative !important; }
       .mlens-tag { position: absolute; top: 8px; left: 8px; z-index: 3; pointer-events: none;
@@ -129,13 +129,19 @@
     if (document.documentElement.style.getPropertyValue("--mlens-blur") !== px) document.documentElement.style.setProperty("--mlens-blur", px);
   }
 
-  const ago = (t) => {
-    const h = (Date.now() - t) / 36e5;
-    if (h < 1) return "just now";
-    if (h < 24) return `${Math.round(h)} hour${Math.round(h) === 1 ? "" : "s"} ago`;
-    const d = Math.round(h / 24);
-    return d === 1 ? "yesterday" : d < 60 ? `${d} days ago` : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  };
+  // Exact time since a listing was seen: "45 seconds", "12 minutes",
+  // "3 hours 20 minutes", "2 days 4 hours".
+  const unit = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  function ago(t) {
+    const sec = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (sec < 60) return `${unit(sec, "second")} ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${unit(min, "minute")} ago`;
+    const hr = Math.floor(min / 60), m = min % 60;
+    if (hr < 24) return `${unit(hr, "hour")}${m ? " " + unit(m, "minute") : ""} ago`;
+    const day = Math.floor(hr / 24), h = hr % 24;
+    return `${unit(day, "day")}${h ? " " + unit(h, "hour") : ""} ago`;
+  }
   const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.1 4.3M6.6 6.6C4.5 8 3 10 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/></svg>';
 
   // The click-to-show panel over a hidden card (built once, then only its date text changes).
@@ -147,14 +153,21 @@
       c.className = "mlens-cover";
       c.setAttribute("role", "button");
       c.tabIndex = 0;
-      c.title = "Marketplace Lens: you've seen this listing before. Click to show it.";
       c.innerHTML = `${EYE}<b></b><span class="mlens-show">Click to show</span>`;
       cell.append(c);
     }
     const text = `Seen ${ago(rec.s)}`;
     const b = c.querySelector("b");
     if (b.textContent !== text) b.textContent = text;
+    const title = `Marketplace Lens: you saw this listing on ${new Date(rec.s).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}. Click to show it.`;
+    if (c.title !== title) c.title = title;
   }
+
+  // Keep the "Seen … ago" labels counting while the page is open.
+  setInterval(() => {
+    if (document.hidden) return;
+    for (const e of cards.values()) if (e.rec && e.cell.getAttribute("data-mlens") === "hide") cover(e.cell, e.rec);
+  }, 1000);
 
   // Only touch the DOM when something changes: our own edits would otherwise
   // trigger the MutationObserver and re-scan forever.
