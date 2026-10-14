@@ -1,0 +1,5 @@
+{
+  "version": "1.0.0",
+  "url": "MarketplaceLens.zip",
+  "notes": "First release: hides Facebook Marketplace listings you've already seen, unless the price has changed."
+}
