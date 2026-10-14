@@ -7,7 +7,9 @@
 
   const ITEM_LINK = 'a[href*="/marketplace/item/"]';
   const KEY = "l:"; // storage key prefix: "l:<listing id>"
-  const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0 };
+  // hideStyle: "blur" keeps the card's space and blurs it under a click-to-show label;
+  // "cover" uses a solid panel instead; "collapse" removes the card from the grid.
+  const DEFAULTS = { enabled: true, peek: false, seenMs: 1000, hideRightAway: false, forgetDays: 0, hideStyle: "blur" };
 
   // ---------- reading a card ----------
 
@@ -68,6 +70,7 @@
   let settings = { ...DEFAULTS };
   const seenThisTab = new Set(); // seen since this tab opened: stays visible until the next visit
   const changedThisTab = new Map(); // id -> { cls, text }: price tags stay up for the whole visit
+  const revealedThisTab = new Set(); // covered listings you clicked to show
   const cards = new Map();       // link element -> { card, cell, rec }
   const timers = new Map();
   const send = (msg) => chrome.runtime.sendMessage(msg).catch(() => {});
@@ -78,9 +81,35 @@
     const st = document.createElement("style");
     st.id = "mlens-style";
     st.textContent = `
-      html:not(.mlens-peek) [data-mlens="hide"] { display: none !important; }
-      html.mlens-peek [data-mlens="hide"] { opacity: .3; filter: grayscale(1); }
-      html.mlens-peek [data-mlens="hide"]:hover { opacity: .8; filter: none; }
+      /* "collapse": take hidden cards out of the grid */
+      html.mlens-collapse:not(.mlens-peek) [data-mlens="hide"] { display: none !important; }
+      html.mlens-collapse.mlens-peek [data-mlens="hide"] { opacity: .3; filter: grayscale(1); }
+      html.mlens-collapse.mlens-peek [data-mlens="hide"]:hover { opacity: .8; filter: none; }
+      /* "cover": keep the space, put a click-to-show panel over the card.
+         Colours follow Facebook's own light/dark theme variables. */
+      [data-mlens="hide"] { position: relative !important; }
+      .mlens-cover { display: none; }
+      html:not(.mlens-collapse) [data-mlens="hide"] > .mlens-cover {
+        display: flex; position: absolute; inset: 0; z-index: 4; cursor: pointer;
+        flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+        border-radius: 8px; text-align: center; padding: 12px;
+        background: var(--secondary-button-background, #e4e6eb); color: var(--secondary-text, #65676b);
+        font: 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; transition: opacity .15s; }
+      html:not(.mlens-collapse) [data-mlens="hide"] > .mlens-cover:hover { filter: brightness(.96); }
+      html:not(.mlens-collapse) [data-mlens="hide"] > .mlens-cover:focus-visible { outline: 2px solid #1877f2; outline-offset: 2px; }
+      html.mlens-peek:not(.mlens-collapse) [data-mlens="hide"] > .mlens-cover { opacity: .55; }
+      .mlens-cover b { font-weight: 600; color: var(--primary-text, #050505); font-size: 14px; }
+      .mlens-cover .mlens-show { font-weight: 600; color: var(--primary-button-background, #1877f2); }
+      .mlens-cover svg { width: 28px; height: 28px; opacity: .6; }
+      /* "blur": same panel, but see-through and blurred; labels sit on small pills */
+      html.mlens-blur [data-mlens="hide"] > .mlens-cover {
+        background: rgba(255, 255, 255, .18);
+        backdrop-filter: blur(14px) saturate(.7); -webkit-backdrop-filter: blur(14px) saturate(.7); }
+      html.mlens-blur.mlens-peek [data-mlens="hide"] > .mlens-cover { opacity: 1; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+      html.mlens-blur [data-mlens="hide"] > .mlens-cover b,
+      html.mlens-blur [data-mlens="hide"] > .mlens-cover .mlens-show {
+        background: var(--card-background, #fff); padding: 3px 10px; border-radius: 999px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+      html.mlens-blur [data-mlens="hide"] > .mlens-cover svg { color: #fff; opacity: .95; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
       [data-mlens-tagged] { position: relative !important; }
       .mlens-tag { position: absolute; top: 8px; left: 8px; z-index: 3; pointer-events: none;
         font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -93,6 +122,35 @@
 
   function applyPeek() {
     document.documentElement.classList.toggle("mlens-peek", !!settings.peek);
+    document.documentElement.classList.toggle("mlens-collapse", settings.hideStyle === "collapse");
+    document.documentElement.classList.toggle("mlens-blur", settings.hideStyle === "blur");
+  }
+
+  const ago = (t) => {
+    const h = (Date.now() - t) / 36e5;
+    if (h < 1) return "just now";
+    if (h < 24) return `${Math.round(h)} hour${Math.round(h) === 1 ? "" : "s"} ago`;
+    const d = Math.round(h / 24);
+    return d === 1 ? "yesterday" : d < 60 ? `${d} days ago` : new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+  const EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9 4.5 10 7a12.6 12.6 0 0 1-3.1 4.3M6.6 6.6C4.5 8 3 10 2 12c1 2.5 5 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/></svg>';
+
+  // The click-to-show panel over a hidden card (built once, then only its date text changes).
+  function cover(cell, rec) {
+    let c = cell.querySelector(":scope > .mlens-cover");
+    if (!rec) { if (c) c.remove(); return; }
+    if (!c) {
+      c = document.createElement("div");
+      c.className = "mlens-cover";
+      c.setAttribute("role", "button");
+      c.tabIndex = 0;
+      c.title = "Marketplace Lens: you've seen this listing before. Click to show it.";
+      c.innerHTML = `${EYE}<b></b><span class="mlens-show">Click to show</span>`;
+      cell.append(c);
+    }
+    const text = `Seen ${ago(rec.s)}`;
+    const b = c.querySelector("b");
+    if (b.textContent !== text) b.textContent = text;
   }
 
   // Only touch the DOM when something changes: our own edits would otherwise
@@ -126,15 +184,40 @@
       } else if (changedThisTab.has(card.id)) {
         // Already saved the new price, but keep the tag for this visit.
         ({ cls: tagCls, text: tagText } = changedThisTab.get(card.id));
-      } else if (!seenThisTab.has(card.id) || (settings.hideRightAway && entry.leftView)) {
+      } else if (!revealedThisTab.has(card.id) && (!seenThisTab.has(card.id) || (settings.hideRightAway && entry.leftView))) {
         hide = true;
-        tagCls = "seen"; tagText = "Seen"; // only visible while peeking
+        if (settings.hideStyle === "collapse") { tagCls = "seen"; tagText = "Seen"; } // only visible while peeking
       }
     }
     if (hide && cell.getAttribute("data-mlens") !== "hide") cell.setAttribute("data-mlens", "hide");
     else if (!hide && cell.hasAttribute("data-mlens")) cell.removeAttribute("data-mlens");
     tag(cell, tagCls, tagText);
+    cover(cell, hide && settings.hideStyle !== "collapse" ? rec : null);
   }
+
+  // Clicking a cover shows that listing for the rest of this visit, without
+  // also opening it (the cover sits inside Facebook's link).
+  function reveal(coverEl) {
+    const cell = coverEl.parentElement;
+    const entry = cell && cards.get(cell.__mlensLink);
+    if (!entry) return;
+    revealedThisTab.add(entry.card.id);
+    render(entry);
+    countHidden();
+  }
+  const onCoverClick = (e) => {
+    const c = e.target.closest && e.target.closest(".mlens-cover");
+    if (!c) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (e.type === "click") reveal(c);
+  };
+  for (const type of ["click", "auxclick", "mousedown", "mouseup", "pointerdown", "pointerup"]) window.addEventListener(type, onCoverClick, true);
+  window.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("mlens-cover")) {
+      e.preventDefault(); e.stopImmediatePropagation(); reveal(e.target);
+    }
+  }, true);
 
   // ---------- recording what you've seen ----------
 
@@ -166,7 +249,7 @@
     for (const r of records) {
       const entry = cards.get(r.target.__mlensLink);
       if (!entry) continue;
-      if (r.isIntersecting && r.intersectionRatio >= FULLY) {
+      if (r.isIntersecting && r.intersectionRatio >= FULLY && entry.cell.getAttribute("data-mlens") !== "hide") {
         if (!timers.has(entry)) timers.set(entry, setTimeout(() => { timers.delete(entry); entry.seen = true; markSeen(entry); }, settings.seenMs));
       } else {
         clearTimeout(timers.get(entry));
@@ -251,9 +334,9 @@
     applyPeek();
     scan();
     watchItemPage();
+    const ours = (n) => n.nodeType === 1 && (n.matches(".mlens-tag, .mlens-cover") || !!n.closest(".mlens-tag, .mlens-cover"));
     new MutationObserver((muts) => {
-      if (muts.some((m) => !(m.target.classList && m.target.classList.contains("mlens-tag")) &&
-        ![...m.addedNodes, ...m.removedNodes].every((n) => n.classList && n.classList.contains("mlens-tag")))) scheduleScan();
+      if (muts.some((m) => !ours(m.target) && ![...m.addedNodes, ...m.removedNodes].every(ours))) scheduleScan();
     }).observe(document.documentElement, { childList: true, subtree: true });
     // Facebook is a single-page app: follow URL changes.
     let last = location.href;
