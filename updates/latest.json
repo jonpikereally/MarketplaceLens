@@ -1,5 +1,5 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "url": "MarketplaceLens.zip",
-  "notes": "Hidden listings now say exactly how long ago you saw them (\"Seen 3 hours 20 minutes ago\"), counting up live; hover for the exact date and time."
+  "notes": "Fixed a false \"price dropped\" tag on Facebook's \"New for you\" notices. They link to listings without showing a price, and Marketplace Lens read the notice sentence as the new price. Prices it saved that way are repaired automatically."
 }
