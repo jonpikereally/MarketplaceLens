@@ -15,6 +15,18 @@
 
   const MONEY = /^(free|[A-Z]{0,3}\s?[$€£¥₹]\s?[\d.,\s]+|[\d.,\s]+\s?[$€£¥₹]|[\d.,]+\s?(kr|zł))$/i;
 
+  // A price at the start of a card's first line (which may hold two: "CA$400CA$500").
+  const LEADING_MONEY = /^(free|[A-Z]{0,3}\s?[$€£¥₹]\s?\d[\d.,]*|\d[\d.,]*\s?([$€£¥₹]|kr|zł))/i;
+
+  // Versions up to 1.2.1 could save a sentence as a price (from a "New for you"
+  // notice). Drop any saved price that isn't one, falling back to the last real one.
+  function cleanRec(rec) {
+    if (!rec || !rec.price || MONEY.test(String(rec.price).trim())) return rec;
+    const h = (rec.h || []).filter((x) => x.p && MONEY.test(String(x.p).trim()));
+    const last = h[h.length - 1];
+    return { ...rec, h, price: last ? last.p : null, value: last ? last.v : null };
+  }
+
   function priceValue(text) {
     if (!text) return null;
     if (/^free$/i.test(text.trim())) return 0;
@@ -41,9 +53,12 @@
     const pi = parts.findIndex((p) => MONEY.test(p.trim()));
     if (pi > 0) { price = parts[pi].trim(); title = parts.slice(0, pi).join(", "); }
     if (!price && lines.length) {
-      const first = lines[0].match(/^(free|[^\d]*[\d.,]+)/i);
+      const first = lines[0].match(LEADING_MONEY);
       price = first ? first[0].trim() : null;
     }
+    // Links without a price aren't listing cards: Facebook's "New for you"
+    // notices link to listings too ("…may sell soon: PlayAudio12").
+    if (!price) return null;
     if (!title) title = lines.find((l, i) => i > 0 && !MONEY.test(l)) || lines[1] || "";
     const img = a.querySelector("img");
     return { id, price, value: priceValue(price), title: title.slice(0, 200), image: img ? img.currentSrc || img.src : null };
@@ -242,7 +257,7 @@
     const key = KEY + card.id;
     const now = Date.now();
     try {
-      const rec = (await chrome.storage.local.get(key))[key];
+      const rec = cleanRec((await chrome.storage.local.get(key))[key]);
       const next = rec ? { ...rec, s: now, t: card.title || rec.t, i: card.image || rec.i } : { f: now, s: now, t: card.title, i: card.image, h: [] };
       if (card.price && (!rec || priceChanged(rec, card) || !rec.price)) {
         if (rec && rec.price && priceChanged(rec, card)) next.c = now; // last price change
@@ -313,7 +328,7 @@
       send({ type: "error", code: "ML-301", details: String(e && e.stack || e) });
     }
     for (const entry of fresh) {
-      entry.rec = stored[KEY + entry.card.id] || null;
+      entry.rec = cleanRec(stored[KEY + entry.card.id]) || null;
       render(entry);
       io.observe(entry.cell);
     }

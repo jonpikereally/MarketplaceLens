@@ -5,8 +5,8 @@ import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/content.js", import.meta.url), "utf8");
 const pick = (re) => src.match(re)[0];
-const { readCard, priceValue } = new Function(
-  pick(/  const MONEY = .*\n/) + pick(/  function priceValue[\s\S]*?\n  }\n/) + pick(/  function readCard[\s\S]*?\n  }\n/) + "return { readCard, priceValue };"
+const { readCard, priceValue, cleanRec } = new Function(
+  pick(/  const MONEY = .*\n/) + pick(/  const LEADING_MONEY = .*\n/) + pick(/  function cleanRec[\s\S]*?\n  }\n/) + pick(/  function priceValue[\s\S]*?\n  }\n/) + pick(/  function readCard[\s\S]*?\n  }\n/) + "return { readCard, priceValue, cleanRec };"
 )();
 
 for (const [t, v] of [["CA$6,000", 6000], ["$20", 20], ["FREE", 0], ["Free", 0], ["€1.299,50", 1299.5], ["£12.50", 12.5], ["CA$1,200", 1200], [null, null]]) {
@@ -25,6 +25,17 @@ assert.deepEqual([c.price, c.value, c.title], ["CA$400", 400, "Road bike"]);
 c = readCard(fakeLink("Free Hot tub, FREE, Guelph, ON, listing 8", "FREE\nFree Hot tub\nGuelph, ON", "/marketplace/item/8/"));
 assert.deepEqual([c.price, c.value, c.title], ["FREE", 0, "Free Hot tub"]);
 assert.equal(readCard(fakeLink("x", "", "/marketplace/category/vehicles/")), null);
+// "New for you" notices link to listings but carry no price: not cards.
+assert.equal(readCard(fakeLink("", "A listing you were interested in is getting popular and may sell soon: PlayAudio12.\n2m", "/marketplace/item/9/")), null);
+assert.equal(readCard(fakeLink("", "The Godin Session Electric Guitar you viewed is now CA$50 less.\n10h", "/marketplace/item/10/")), null);
+c = readCard(fakeLink("", "€1.299,50\nSofa\nBerlin", "/marketplace/item/11/"));
+assert.deepEqual([c.price, c.value], ["€1.299,50", 1299.5]);
+// Records saved with a sentence as the price get repaired.
+let r = cleanRec({ s: 1, price: "A listing you were interested in is getting popular and may sell soon: PlayAudio12", value: 12,
+  h: [{ t: 1, p: "CA$800", v: 800 }, { t: 2, p: "A listing you were interested in is getting popular and may sell soon: PlayAudio12", v: 12 }] });
+assert.deepEqual([r.price, r.value, r.h.length], ["CA$800", 800, 1]);
+r = { s: 1, price: "CA$5", value: 5, h: [] };
+assert.equal(cleanRec(r), r);
 console.log("All content tests passed.");
 
 // "Seen … ago" wording.
