@@ -1,1 +1,1 @@
-Fixed a false "price dropped" tag on Facebook's "New for you" notices. They link to listings without showing a price, and Marketplace Lens read the notice sentence as the new price. Prices it saved that way are repaired automatically.
+New: mark a listing as not interesting. Hover it and click the ✕ (or "Not interested" on a blurred one) and it gets a solid "Manually rejected" panel on every visit, even if the price changes; the panel notes any price change. Click to peek, or Undo. The popup shows how many you've rejected, with Un-reject all.

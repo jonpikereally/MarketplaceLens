@@ -15,6 +15,7 @@ Marketplace keeps showing the same listings. Marketplace Lens remembers every li
 
   Clicking a blurred or covered listing shows it for the rest of that visit, without opening it.
 - **Shows price changes.** If a seen listing comes back at a different price, it stays visible with a tag: **↓ was CA$500** (green) or **↑ was CA$200** (orange). Once you've seen the new price, it's hidden again next time. The popup lists recent price changes.
+- **Reject listings you're not interested in.** Hover any listing and click the **✕** in its corner (or click **Not interested** on a blurred one). It gets a solid, opaque **"Manually rejected"** panel right away and on every later visit, whatever your blur setting, and even if the price changes. If it does change, the panel says so ("Now … (was … when you rejected it)"). Click the panel to peek for that visit, or **Undo** to un-reject. Settings shows how many you've rejected, with **Un-reject all**.
 - **Toolbar badge** shows how many listings are hidden on the current page.
 - **Peek** at hidden listings (less blur, see-through covers, or faded) from the popup, or switch hiding off entirely.
 - **Show seen listings again** after 7, 30 or 90 days, if you like (default: never).
