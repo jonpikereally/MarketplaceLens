@@ -12,7 +12,7 @@ const rec = (t, prices, changedHoursAgo) => ({ f: now - 72 * H, s: now - H, t, i
 const store = {
   "l:101": rec("Road bike, 56cm aluminium frame", ["CA$400", "CA$320"], 2),
   "l:102": rec("Desk lamp", ["CA$25", "CA$35"], 30),
-  "l:103": rec("Couch", ["FREE"]),
+  "l:103": { ...rec("Couch", ["FREE"]), x: now - 5 * H, xp: "FREE", xv: 0 },
   "l:104": rec("Yamaha MODX6+ 61 key", ["CA$2,200", "CA$2,000"], 0.2),
   settings: { enabled: true, peek: false, seenMs: 1000 },
   errors: [{ code: "ML-301", details: "Example error for the harness", t: now }],
